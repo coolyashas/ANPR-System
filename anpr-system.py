@@ -114,32 +114,43 @@ def filter_text(region, ocr_result, region_threshold):
             plate.append(result[1][0])
             scores.append(result[1][1])
 
+    if not plate:
+        return '', 0
+
     plate = ''.join(plate)
     plate = re.sub(r'\W+', '', plate)
+
     if not scores:
         plate = ''
         scores.append(0)
+
     return plate.upper(), max(scores)
 
 
-def recognize_plate_easyocr(img, coords,reader,region_threshold):
-    """recognize license plate numbers using paddle OCR"""
-    # separate coordinates from box
+def recognize_plate_easyocr(img, coords, reader, region_threshold):
+    """Recognize license plate numbers using PaddleOCR."""
     xmin, ymin = coords[0]
     xmax, ymax = coords[1]
-    # get the subimage that makes up the bounded region and take an additional 5 pixels on each side
-    nplate = img[int(ymin):int(ymax), int(xmin):int(xmax)] ### cropping the number plate from the whole image
+    # Cropping the number plate from the image
+    nplate = img[int(ymin):int(ymax), int(xmin):int(xmax)]
+    
     try:
         nplate = clean(nplate)
     except:
-        return '',0
+        return '', 0
 
+    # Perform OCR on the cleaned number plate region
     ocr_result = reader.ocr(nplate)
+    
+    # Check if ocr_result is None or empty before proceeding
+    if ocr_result is None or len(ocr_result)==0 or ocr_result[0] is None or len(ocr_result[0])==0:
+        return '', 0
 
-    text, score = filter_text(region=nplate, ocr_result=ocr_result, region_threshold= region_threshold)
+    text, score = filter_text(region=nplate, ocr_result=ocr_result, region_threshold=region_threshold)
 
-    if len(text) ==1:
+    if len(text) == 1:
         text = text[0].upper()
+
     return text, score
 
 
@@ -277,8 +288,3 @@ args = parser.parse_args()
 
 if __name__ == '__main__':
 	main(args.weight, args.input, args.output, args.csv)
-
-
-
-
-
